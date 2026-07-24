@@ -1,6 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
-from app.database import check_database_connection
+from app.database import check_database_connection, fetch_products
 
 app = FastAPI(
     title="StockGuard PyME API",
@@ -35,3 +35,15 @@ def database_health_check():
     return {
         "database": "connection_error"
     }
+
+
+@app.get("/products")
+def list_products():
+    try:
+        products = fetch_products()
+        return products
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Error al obtener productos"
+        )

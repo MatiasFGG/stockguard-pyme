@@ -19,5 +19,28 @@ def check_database_connection():
             return result.scalar() == 1
     except Exception:
         return False
-    
-    
+
+
+def fetch_products():
+    query = text("""
+        SELECT
+            id,
+            name,
+            description,
+            barcode,
+            purchase_price,
+            sale_price,
+            current_stock,
+            minimum_stock,
+            active,
+            category_id,
+            supplier_id
+        FROM products
+        ORDER BY id;
+    """)
+
+    with engine.connect() as connection:
+        result = connection.execute(query)
+        products = [dict(row._mapping) for row in result]
+
+    return products
