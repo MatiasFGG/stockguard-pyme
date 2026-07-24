@@ -148,3 +148,26 @@ def create_product(product_data: dict):
             )
 
     return created_product
+
+def fetch_inventory_movements():
+    query = text("""
+        SELECT
+            im.id,
+            im.product_id,
+            p.name AS product_name,
+            im.movement_type,
+            im.quantity,
+            im.movement_date,
+            im.reason,
+            im.reference
+        FROM inventory_movements im
+        INNER JOIN products p
+            ON im.product_id = p.id
+        ORDER BY im.id DESC;
+    """)
+
+    with engine.connect() as connection:
+        result = connection.execute(query)
+        movements = [dict(row._mapping) for row in result]
+
+    return movements
