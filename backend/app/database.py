@@ -75,3 +75,48 @@ def fetch_product_by_id(product_id: int):
         return None
 
     return dict(product._mapping)
+
+def create_product(product_data: dict):
+    query = text("""
+        INSERT INTO products (
+            name,
+            description,
+            barcode,
+            purchase_price,
+            sale_price,
+            current_stock,
+            minimum_stock,
+            category_id,
+            supplier_id
+        )
+        VALUES (
+            :name,
+            :description,
+            :barcode,
+            :purchase_price,
+            :sale_price,
+            :current_stock,
+            :minimum_stock,
+            :category_id,
+            :supplier_id
+        )
+        RETURNING
+            id,
+            name,
+            description,
+            barcode,
+            purchase_price,
+            sale_price,
+            current_stock,
+            minimum_stock,
+            active,
+            category_id,
+            supplier_id;
+    """)
+
+    with engine.begin() as connection:
+        result = connection.execute(query, product_data)
+        product = result.fetchone()
+
+    return dict(product._mapping)
+

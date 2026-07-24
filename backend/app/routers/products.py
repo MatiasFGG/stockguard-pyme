@@ -1,12 +1,23 @@
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException
 
-from app.database import fetch_product_by_id, fetch_products
+from app.database import create_product, fetch_product_by_id, fetch_products
 
 router = APIRouter(
     prefix="/products",
     tags=["Products"]
 )
 
+class ProductCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=150)
+    description: str | None = None
+    barcode: str | None = None
+    purchase_price: float = Field(ge=0)
+    sale_price: float = Field(ge=0)
+    current_stock: int = Field(default=0, ge=0)
+    minimum_stock: int = Field(default=0, ge=0)
+    category_id: int
+    supplier_id: int | None = None
 
 @router.get("")
 def list_products():
@@ -18,6 +29,18 @@ def list_products():
             status_code=500,
             detail="Error al obtener productos"
         )
+      
+@router.post("")
+def add_product(product: ProductCreate):
+    try:
+        created_product = create_product(product.model_dump())
+        return created_product
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Error al crear producto"
+        )
+              
         
 @router.get("/{product_id}")
 def get_product(product_id: int):
