@@ -44,3 +44,34 @@ def fetch_products():
         products = [dict(row._mapping) for row in result]
 
     return products
+
+def fetch_product_by_id(product_id: int):
+    query = text("""
+        SELECT
+            id,
+            name,
+            description,
+            barcode,
+            purchase_price,
+            sale_price,
+            current_stock,
+            minimum_stock,
+            active,
+            category_id,
+            supplier_id
+        FROM products
+        WHERE id = :product_id;
+    """)
+
+    with engine.connect() as connection:
+        result = connection.execute(
+            query,
+            {"product_id": product_id}
+        )
+
+        product = result.fetchone()
+
+    if product is None:
+        return None
+
+    return dict(product._mapping)

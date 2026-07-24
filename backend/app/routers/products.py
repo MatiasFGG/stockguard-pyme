@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from app.database import fetch_products
+from app.database import fetch_product_by_id, fetch_products
 
 router = APIRouter(
     prefix="/products",
@@ -18,3 +18,16 @@ def list_products():
             status_code=500,
             detail="Error al obtener productos"
         )
+        
+@router.get("/{product_id}")
+def get_product(product_id: int):
+    product = fetch_product_by_id(product_id)
+
+    if product is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Producto no encontrado"
+        )
+
+    return product        
+
