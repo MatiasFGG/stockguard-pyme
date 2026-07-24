@@ -77,7 +77,7 @@ def fetch_product_by_id(product_id: int):
     return dict(product._mapping)
 
 def create_product(product_data: dict):
-    query = text("""
+    create_product_query = text("""
         INSERT INTO products (
             name,
             description,
@@ -114,9 +114,37 @@ def create_product(product_data: dict):
             supplier_id;
     """)
 
+    create_movement_query = text("""
+        INSERT INTO inventory_movements (
+            product_id,
+            movement_type,
+            quantity,
+            reason,
+            reference
+        )
+        VALUES (
+            :product_id,
+            'ENTRADA',
+            :quantity,
+            :reason,
+            :reference
+        );
+    """)
+
     with engine.begin() as connection:
-        result = connection.execute(query, product_data)
+        result = connection.execute(create_product_query, product_data)
         product = result.fetchone()
+        created_product = dict(product._mapping)
 
-    return dict(product._mapping)
+        if created_product["current_stock"] > 0:
+            connection.execute(
+                create_movement_query,
+                {
+                    "product_id": created_product["id"],
+                    "quantity": created_product["current_stock"],
+                    "reason": "Stock inicial al crear producto",
+                    "reference": "PRODUCT_CREATE"
+                }
+            )
 
+    return created_product
