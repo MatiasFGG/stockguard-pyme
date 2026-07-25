@@ -3,7 +3,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.database import create_sale
+from app.database import create_sale, fetch_sale_by_id, fetch_sales
 
 router = APIRouter(
     prefix="/sales",
@@ -28,6 +28,30 @@ class SaleCreate(BaseModel):
     observation: str | None = None
     items: list[SaleItemCreate] = Field(min_length=1)
 
+
+@router.get("")
+def list_sales():
+    try:
+        sales = fetch_sales()
+        return sales
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Error al obtener ventas"
+        )
+
+
+@router.get("/{sale_id}")
+def get_sale(sale_id: int):
+    sale = fetch_sale_by_id(sale_id)
+
+    if sale is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Venta no encontrada"
+        )
+
+    return sale
 
 @router.post("")
 def add_sale(sale: SaleCreate):

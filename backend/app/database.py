@@ -472,3 +472,83 @@ def create_sale(sale_data: dict):
         "sale": sale,
         "details": sale_details
     }    
+    
+def fetch_sales():
+    query = text("""
+        SELECT
+            s.id,
+            s.sale_date,
+            s.total,
+            s.payment_method,
+            s.observation,
+            COUNT(sd.id) AS total_products,
+            COALESCE(SUM(sd.quantity), 0) AS total_items
+        FROM sales s
+        LEFT JOIN sale_details sd
+            ON s.id = sd.sale_id
+        GROUP BY
+            s.id,
+            s.sale_date,
+            s.total,
+            s.payment_method,
+            s.observation
+        ORDER BY s.id DESC;
+    """)
+
+    with engine.connect() as connection:
+        result = connection.execute(query)
+        sales = [dict(row._mapping) for row in result]
+
+    return sales
+
+
+def fetch_sale_by_id(sale_id: int):
+    sale_query = text("""
+        SELECT
+            id,
+            sale_date,
+            total,
+            payment_method,
+            observation
+        FROM sales
+        WHERE id = :sale_id;
+    """)
+
+    details_query = text("""
+        SELECT
+            sd.id,
+            sd.sale_id,
+            sd.product_id,
+            p.name AS product_name,
+            sd.quantity,
+            sd.unit_price,
+            sd.subtotal
+        FROM sale_details sd
+        INNER JOIN products p
+            ON sd.product_id = p.id
+        WHERE sd.sale_id = :sale_id
+        ORDER BY sd.id;
+    """)
+
+    with engine.connect() as connection:
+        sale_result = connection.execute(
+            sale_query,
+            {"sale_id": sale_id}
+        )
+
+        sale = sale_result.fetchone()
+
+        if sale is None:
+            return None
+
+        details_result = connection.execute(
+            details_query,
+            {"sale_id": sale_id}
+        )
+
+        details = [dict(row._mapping) for row in details_result]
+
+    return {
+        "sale": dict(sale._mapping),
+        "details": details
+    }    
