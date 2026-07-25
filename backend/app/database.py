@@ -698,3 +698,37 @@ def activate_product(product_id: int):
         return None
 
     return fetch_product_by_id(product_id)
+
+def fetch_low_stock_products():
+    query = text("""
+        SELECT
+            p.id,
+            p.name,
+            p.description,
+            p.barcode,
+            p.purchase_price,
+            p.sale_price,
+            p.current_stock,
+            p.minimum_stock,
+            p.active,
+            p.category_id,
+            c.name AS category_name,
+            p.supplier_id,
+            s.name AS supplier_name
+        FROM products p
+        INNER JOIN categories c
+            ON p.category_id = c.id
+        LEFT JOIN suppliers s
+            ON p.supplier_id = s.id
+        WHERE
+            p.active = true
+            AND p.current_stock <= p.minimum_stock
+        ORDER BY p.current_stock ASC;
+    """)
+
+    with engine.connect() as connection:
+        result = connection.execute(query)
+        products = [dict(row._mapping) for row in result]
+
+    return products
+

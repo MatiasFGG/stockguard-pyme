@@ -5,6 +5,7 @@ from app.database import (
     activate_product,
     create_product,
     deactivate_product,
+    fetch_low_stock_products,
     fetch_product_by_id,
     fetch_products
 )
@@ -47,6 +48,16 @@ def add_product(product: ProductCreate):
             detail="Error al crear producto"
         )
               
+@router.get("/low-stock")
+def list_low_stock_products():
+    try:
+        products = fetch_low_stock_products()
+        return products
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Error al obtener productos con stock bajo"
+        )
         
 @router.get("/{product_id}")
 def get_product(product_id: int):
@@ -84,3 +95,4 @@ def enable_product(product_id: int):
         )
 
     return product
+
