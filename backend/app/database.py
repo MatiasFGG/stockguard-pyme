@@ -26,19 +26,25 @@ def check_database_connection():
 def fetch_products():
     query = text("""
         SELECT
-            id,
-            name,
-            description,
-            barcode,
-            purchase_price,
-            sale_price,
-            current_stock,
-            minimum_stock,
-            active,
-            category_id,
-            supplier_id
-        FROM products
-        ORDER BY id;
+            p.id,
+            p.name,
+            p.description,
+            p.barcode,
+            p.purchase_price,
+            p.sale_price,
+            p.current_stock,
+            p.minimum_stock,
+            p.active,
+            p.category_id,
+            c.name AS category_name,
+            p.supplier_id,
+            s.name AS supplier_name
+        FROM products p
+        INNER JOIN categories c
+            ON p.category_id = c.id
+        LEFT JOIN suppliers s
+            ON p.supplier_id = s.id
+        ORDER BY p.id;
     """)
 
     with engine.connect() as connection:
@@ -50,19 +56,25 @@ def fetch_products():
 def fetch_product_by_id(product_id: int):
     query = text("""
         SELECT
-            id,
-            name,
-            description,
-            barcode,
-            purchase_price,
-            sale_price,
-            current_stock,
-            minimum_stock,
-            active,
-            category_id,
-            supplier_id
-        FROM products
-        WHERE id = :product_id;
+            p.id,
+            p.name,
+            p.description,
+            p.barcode,
+            p.purchase_price,
+            p.sale_price,
+            p.current_stock,
+            p.minimum_stock,
+            p.active,
+            p.category_id,
+            c.name AS category_name,
+            p.supplier_id,
+            s.name AS supplier_name
+        FROM products p
+        INNER JOIN categories c
+            ON p.category_id = c.id
+        LEFT JOIN suppliers s
+            ON p.supplier_id = s.id
+        WHERE p.id = :product_id;
     """)
 
     with engine.connect() as connection:
