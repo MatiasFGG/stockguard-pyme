@@ -1,7 +1,13 @@
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException
 
-from app.database import create_product, fetch_product_by_id, fetch_products
+from app.database import (
+    activate_product,
+    create_product,
+    deactivate_product,
+    fetch_product_by_id,
+    fetch_products
+)
 
 router = APIRouter(
     prefix="/products",
@@ -54,3 +60,27 @@ def get_product(product_id: int):
 
     return product        
 
+@router.patch("/{product_id}/deactivate")
+def disable_product(product_id: int):
+    product = deactivate_product(product_id)
+
+    if product is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Producto no encontrado"
+        )
+
+    return product
+
+
+@router.patch("/{product_id}/activate")
+def enable_product(product_id: int):
+    product = activate_product(product_id)
+
+    if product is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Producto no encontrado"
+        )
+
+    return product

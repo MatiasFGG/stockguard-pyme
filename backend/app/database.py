@@ -655,3 +655,46 @@ def create_supplier(supplier_data: dict):
         supplier = result.fetchone()
 
     return dict(supplier._mapping)    
+
+def deactivate_product(product_id: int):
+    query = text("""
+        UPDATE products
+        SET active = false
+        WHERE id = :product_id
+        RETURNING id;
+    """)
+
+    with engine.begin() as connection:
+        result = connection.execute(
+            query,
+            {"product_id": product_id}
+        )
+
+        product = result.fetchone()
+
+    if product is None:
+        return None
+
+    return fetch_product_by_id(product_id)
+
+
+def activate_product(product_id: int):
+    query = text("""
+        UPDATE products
+        SET active = true
+        WHERE id = :product_id
+        RETURNING id;
+    """)
+
+    with engine.begin() as connection:
+        result = connection.execute(
+            query,
+            {"product_id": product_id}
+        )
+
+        product = result.fetchone()
+
+    if product is None:
+        return None
+
+    return fetch_product_by_id(product_id)
