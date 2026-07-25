@@ -552,3 +552,94 @@ def fetch_sale_by_id(sale_id: int):
         "sale": dict(sale._mapping),
         "details": details
     }    
+    
+def fetch_categories():
+    query = text("""
+        SELECT
+            id,
+            name,
+            description,
+            active
+        FROM categories
+        ORDER BY id;
+    """)
+
+    with engine.connect() as connection:
+        result = connection.execute(query)
+        categories = [dict(row._mapping) for row in result]
+
+    return categories
+
+
+def create_category(category_data: dict):
+    query = text("""
+        INSERT INTO categories (
+            name,
+            description
+        )
+        VALUES (
+            :name,
+            :description
+        )
+        RETURNING
+            id,
+            name,
+            description,
+            active;
+    """)
+
+    with engine.begin() as connection:
+        result = connection.execute(query, category_data)
+        category = result.fetchone()
+
+    return dict(category._mapping)
+
+
+def fetch_suppliers():
+    query = text("""
+        SELECT
+            id,
+            name,
+            phone,
+            email,
+            address,
+            active
+        FROM suppliers
+        ORDER BY id;
+    """)
+
+    with engine.connect() as connection:
+        result = connection.execute(query)
+        suppliers = [dict(row._mapping) for row in result]
+
+    return suppliers
+
+
+def create_supplier(supplier_data: dict):
+    query = text("""
+        INSERT INTO suppliers (
+            name,
+            phone,
+            email,
+            address
+        )
+        VALUES (
+            :name,
+            :phone,
+            :email,
+            :address
+        )
+        RETURNING
+            id,
+            name,
+            phone,
+            email,
+            address,
+            active;
+    """)
+
+    with engine.begin() as connection:
+        result = connection.execute(query, supplier_data)
+        supplier = result.fetchone()
+
+    return dict(supplier._mapping)    

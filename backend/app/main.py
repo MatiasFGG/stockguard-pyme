@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from app.database import check_database_connection
-from app.routers import inventory_movements, products, sales
+from app.routers import categories, inventory_movements, products, sales, suppliers
 
 app = FastAPI(
     title="StockGuard PyME API",
@@ -9,6 +9,8 @@ app = FastAPI(
     version="0.1.0"
 )
 
+app.include_router(categories.router)
+app.include_router(suppliers.router)
 app.include_router(products.router)
 app.include_router(inventory_movements.router)
 app.include_router(sales.router)
@@ -40,3 +42,5 @@ def database_health_check():
     return {
         "database": "connection_error"
     }
+
+    
