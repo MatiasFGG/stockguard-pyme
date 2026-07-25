@@ -171,3 +171,110 @@ def fetch_inventory_movements():
         movements = [dict(row._mapping) for row in result]
 
     return movements
+
+def adjust_product_stock(adjustment_data: dict):
+    product_query = text("""
+        SELECT
+            id,
+            name,
+            current_stock
+        FROM products
+        WHERE id = :product_id
+        FOR UPDATE;
+    """)
+
+    update_stock_query = text("""
+        UPDATE products
+        SET current_stock = :new_stock
+        WHERE id = :product_id
+        RETURNING
+            id,
+            name,
+            current_stock;
+    """)
+
+    create_movement_query = text("""
+        INSERT INTO inventory_movements (
+            product_id,
+            movement_type,
+            quantity,
+            reason,
+            reference
+        )
+        VALUES (
+            :product_id,
+            :movement_type,
+            :quantity,
+            :reason,
+            :reference
+        )
+        RETURNING
+            id,
+            product_id,
+            movement_type,
+            quantity,
+            movement_date,
+            reason,
+            reference;
+    """)
+
+    product_id = adjustment_data["product_id"]
+    movement_type = adjustment_data["movement_type"]
+    quantity = adjustment_data["quantity"]
+
+    with engine.begin() as connection:
+        product_result = connection.execute(
+            product_query,
+            {"product_id": product_id}
+        )
+
+        product = product_result.fetchone()
+
+        if product is None:
+            return {
+                "error": "PRODUCT_NOT_FOUND"
+            }
+
+        current_stock = product._mapping["current_stock"]
+
+        if movement_type == "AJUSTE_POSITIVO":
+            new_stock = current_stock + quantity
+        elif movement_type in ["AJUSTE_NEGATIVO", "MERMA"]:
+            new_stock = current_stock - quantity
+        else:
+            return {
+                "error": "INVALID_MOVEMENT_TYPE"
+            }
+
+        if new_stock < 0:
+            return {
+                "error": "NEGATIVE_STOCK"
+            }
+
+        updated_product_result = connection.execute(
+            update_stock_query,
+            {
+                "product_id": product_id,
+                "new_stock": new_stock
+            }
+        )
+
+        updated_product = dict(updated_product_result.fetchone()._mapping)
+
+        movement_result = connection.execute(
+            create_movement_query,
+            {
+                "product_id": product_id,
+                "movement_type": movement_type,
+                "quantity": quantity,
+                "reason": adjustment_data["reason"],
+                "reference": adjustment_data.get("reference")
+            }
+        )
+
+        movement = dict(movement_result.fetchone()._mapping)
+
+    return {
+        "product": updated_product,
+        "movement": movement
+    }
