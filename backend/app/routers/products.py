@@ -7,7 +7,8 @@ from app.database import (
     deactivate_product,
     fetch_low_stock_products,
     fetch_product_by_id,
-    fetch_products
+    fetch_products,
+    update_product
 )
 
 router = APIRouter(
@@ -25,6 +26,16 @@ class ProductCreate(BaseModel):
     minimum_stock: int = Field(default=0, ge=0)
     category_id: int
     supplier_id: int | None = None
+
+class ProductUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=150)
+    description: str | None = None
+    barcode: str | None = None
+    purchase_price: float | None = Field(default=None, ge=0)
+    sale_price: float | None = Field(default=None, ge=0)
+    minimum_stock: int | None = Field(default=None, ge=0)
+    category_id: int | None = Field(default=None, gt=0)
+    supplier_id: int | None = Field(default=None, gt=0)
 
 @router.get("")
 def list_products():
@@ -70,6 +81,39 @@ def get_product(product_id: int):
         )
 
     return product        
+
+@router.patch("/{product_id}")
+def edit_product(product_id: int, product: ProductUpdate):
+    try:
+        result = update_product(
+            product_id,
+            product.model_dump()
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Error al actualizar producto"
+        )
+
+    if result.get("error") == "PRODUCT_NOT_FOUND":
+        raise HTTPException(
+            status_code=404,
+            detail="Producto no encontrado"
+        )
+
+    if result.get("error") == "CATEGORY_NOT_FOUND":
+        raise HTTPException(
+            status_code=404,
+            detail="Categoría no encontrada"
+        )
+
+    if result.get("error") == "SUPPLIER_NOT_FOUND":
+        raise HTTPException(
+            status_code=404,
+            detail="Proveedor no encontrado"
+        )
+
+    return result
 
 @router.patch("/{product_id}/deactivate")
 def disable_product(product_id: int):

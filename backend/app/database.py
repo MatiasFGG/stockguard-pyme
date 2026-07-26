@@ -803,3 +803,86 @@ def fetch_top_products(limit: int):
         products = [dict(row._mapping) for row in result]
 
     return products
+
+def update_product(product_id: int, product_data: dict):
+    product_query = text("""
+        SELECT id
+        FROM products
+        WHERE id = :product_id;
+    """)
+
+    category_query = text("""
+        SELECT id
+        FROM categories
+        WHERE id = :category_id;
+    """)
+
+    supplier_query = text("""
+        SELECT id
+        FROM suppliers
+        WHERE id = :supplier_id;
+    """)
+
+    update_query = text("""
+        UPDATE products
+        SET
+            name = COALESCE(:name, name),
+            description = COALESCE(:description, description),
+            barcode = COALESCE(:barcode, barcode),
+            purchase_price = COALESCE(:purchase_price, purchase_price),
+            sale_price = COALESCE(:sale_price, sale_price),
+            minimum_stock = COALESCE(:minimum_stock, minimum_stock),
+            category_id = COALESCE(:category_id, category_id),
+            supplier_id = COALESCE(:supplier_id, supplier_id)
+        WHERE id = :product_id
+        RETURNING id;
+    """)
+
+    with engine.begin() as connection:
+        product_result = connection.execute(
+            product_query,
+            {"product_id": product_id}
+        )
+
+        product = product_result.fetchone()
+
+        if product is None:
+            return {
+                "error": "PRODUCT_NOT_FOUND"
+            }
+
+        if product_data.get("category_id") is not None:
+            category_result = connection.execute(
+                category_query,
+                {"category_id": product_data["category_id"]}
+            )
+
+            category = category_result.fetchone()
+
+            if category is None:
+                return {
+                    "error": "CATEGORY_NOT_FOUND"
+                }
+
+        if product_data.get("supplier_id") is not None:
+            supplier_result = connection.execute(
+                supplier_query,
+                {"supplier_id": product_data["supplier_id"]}
+            )
+
+            supplier = supplier_result.fetchone()
+
+            if supplier is None:
+                return {
+                    "error": "SUPPLIER_NOT_FOUND"
+                }
+
+        connection.execute(
+            update_query,
+            {
+                "product_id": product_id,
+                **product_data
+            }
+        )
+
+    return fetch_product_by_id(product_id)
