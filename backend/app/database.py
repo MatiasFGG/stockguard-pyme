@@ -886,3 +886,98 @@ def update_product(product_id: int, product_data: dict):
         )
 
     return fetch_product_by_id(product_id)
+
+def update_category(category_id: int, category_data: dict):
+    category_query = text("""
+        SELECT id
+        FROM categories
+        WHERE id = :category_id;
+    """)
+
+    update_query = text("""
+        UPDATE categories
+        SET
+            name = COALESCE(:name, name),
+            description = COALESCE(:description, description)
+        WHERE id = :category_id
+        RETURNING
+            id,
+            name,
+            description,
+            active;
+    """)
+
+    with engine.begin() as connection:
+        category_result = connection.execute(
+            category_query,
+            {"category_id": category_id}
+        )
+
+        category = category_result.fetchone()
+
+        if category is None:
+            return {
+                "error": "CATEGORY_NOT_FOUND"
+            }
+
+        result = connection.execute(
+            update_query,
+            {
+                "category_id": category_id,
+                **category_data
+            }
+        )
+
+        updated_category = result.fetchone()
+
+    return dict(updated_category._mapping)
+
+
+def update_supplier(supplier_id: int, supplier_data: dict):
+    supplier_query = text("""
+        SELECT id
+        FROM suppliers
+        WHERE id = :supplier_id;
+    """)
+
+    update_query = text("""
+        UPDATE suppliers
+        SET
+            name = COALESCE(:name, name),
+            phone = COALESCE(:phone, phone),
+            email = COALESCE(:email, email),
+            address = COALESCE(:address, address)
+        WHERE id = :supplier_id
+        RETURNING
+            id,
+            name,
+            phone,
+            email,
+            address,
+            active;
+    """)
+
+    with engine.begin() as connection:
+        supplier_result = connection.execute(
+            supplier_query,
+            {"supplier_id": supplier_id}
+        )
+
+        supplier = supplier_result.fetchone()
+
+        if supplier is None:
+            return {
+                "error": "SUPPLIER_NOT_FOUND"
+            }
+
+        result = connection.execute(
+            update_query,
+            {
+                "supplier_id": supplier_id,
+                **supplier_data
+            }
+        )
+
+        updated_supplier = result.fetchone()
+
+    return dict(updated_supplier._mapping)
