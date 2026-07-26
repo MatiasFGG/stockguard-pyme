@@ -732,3 +732,74 @@ def fetch_low_stock_products():
 
     return products
 
+def fetch_sales_summary():
+    query = text("""
+        SELECT
+            (
+                SELECT COALESCE(SUM(total), 0)
+                FROM sales
+            ) AS total_sales_amount,
+
+            (
+                SELECT COUNT(*)
+                FROM sales
+            ) AS total_sales,
+
+            (
+                SELECT COALESCE(SUM(quantity), 0)
+                FROM sale_details
+            ) AS total_items_sold,
+
+            CASE
+                WHEN (
+                    SELECT COUNT(*)
+                    FROM sales
+                ) = 0 THEN 0
+                ELSE ROUND(
+                    (
+                        SELECT COALESCE(SUM(total), 0)
+                        FROM sales
+                    ) / (
+                        SELECT COUNT(*)
+                        FROM sales
+                    ),
+                    2
+                )
+            END AS average_sale_amount;
+    """)
+
+    with engine.connect() as connection:
+        result = connection.execute(query)
+        summary = result.fetchone()
+
+    return dict(summary._mapping)
+
+
+def fetch_top_products(limit: int):
+    query = text("""
+        SELECT
+            p.id AS product_id,
+            p.name AS product_name,
+            COALESCE(SUM(sd.quantity), 0) AS total_quantity_sold,
+            COALESCE(SUM(sd.subtotal), 0) AS total_amount_sold
+        FROM sale_details sd
+        INNER JOIN products p
+            ON sd.product_id = p.id
+        GROUP BY
+            p.id,
+            p.name
+        ORDER BY
+            total_quantity_sold DESC,
+            total_amount_sold DESC
+        LIMIT :limit;
+    """)
+
+    with engine.connect() as connection:
+        result = connection.execute(
+            query,
+            {"limit": limit}
+        )
+
+        products = [dict(row._mapping) for row in result]
+
+    return products
