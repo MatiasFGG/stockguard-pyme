@@ -23,8 +23,13 @@ def check_database_connection():
         return False
 
 
-def fetch_products():
-    query = text("""
+def fetch_products(
+    search: str | None = None,
+    category_id: int | None = None,
+    supplier_id: int | None = None,
+    active: bool | None = None
+):
+    base_query = """
         SELECT
             p.id,
             p.name,
@@ -44,11 +49,42 @@ def fetch_products():
             ON p.category_id = c.id
         LEFT JOIN suppliers s
             ON p.supplier_id = s.id
-        ORDER BY p.id;
-    """)
+    """
+
+    where_clauses = []
+    params = {}
+
+    if search is not None and search.strip() != "":
+        where_clauses.append("""
+            (
+                p.name ILIKE :search_pattern
+                OR p.description ILIKE :search_pattern
+                OR p.barcode ILIKE :search_pattern
+            )
+        """)
+        params["search_pattern"] = f"%{search}%"
+
+    if category_id is not None:
+        where_clauses.append("p.category_id = :category_id")
+        params["category_id"] = category_id
+
+    if supplier_id is not None:
+        where_clauses.append("p.supplier_id = :supplier_id")
+        params["supplier_id"] = supplier_id
+
+    if active is not None:
+        where_clauses.append("p.active = :active")
+        params["active"] = active
+
+    if where_clauses:
+        base_query += " WHERE " + " AND ".join(where_clauses)
+
+    base_query += " ORDER BY p.id;"
+
+    query = text(base_query)
 
     with engine.connect() as connection:
-        result = connection.execute(query)
+        result = connection.execute(query, params)
         products = [dict(row._mapping) for row in result]
 
     return products

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.database import (
     activate_product,
@@ -38,9 +38,20 @@ class ProductUpdate(BaseModel):
     supplier_id: int | None = Field(default=None, gt=0)
 
 @router.get("")
-def list_products():
+def list_products(
+    search: str | None = Query(default=None),
+    category_id: int | None = Query(default=None, gt=0),
+    supplier_id: int | None = Query(default=None, gt=0),
+    active: bool | None = Query(default=None)
+):
     try:
-        products = fetch_products()
+        products = fetch_products(
+            search=search,
+            category_id=category_id,
+            supplier_id=supplier_id,
+            active=active
+        )
+
         return products
     except Exception:
         raise HTTPException(
