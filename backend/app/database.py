@@ -1249,3 +1249,168 @@ def create_user(user_data: dict):
 
     return dict(user._mapping)
 
+def update_user_last_login(user_id: int):
+    query = text("""
+        UPDATE users
+        SET
+            last_login_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = :user_id
+        RETURNING last_login_at;
+    """)
+
+    with engine.begin() as connection:
+        result = connection.execute(
+            query,
+            {
+                "user_id": user_id
+            }
+        )
+
+        updated_user = result.fetchone()
+
+    if updated_user is None:
+        return None
+
+    return updated_user._mapping["last_login_at"]
+
+def fetch_users():
+    query = text("""
+        SELECT
+            id,
+            full_name,
+            username,
+            email,
+            role,
+            active,
+            must_change_password,
+            created_at,
+            updated_at,
+            last_login_at
+        FROM users
+        ORDER BY id;
+    """)
+
+    with engine.connect() as connection:
+        result = connection.execute(query)
+
+        users = [
+            dict(row._mapping)
+            for row in result
+        ]
+
+    return users
+
+def update_user(user_id: int, user_data: dict):
+    allowed_fields = {
+        "full_name",
+        "email",
+        "role"
+    }
+
+    fields_to_update = {
+        key: value
+        for key, value in user_data.items()
+        if key in allowed_fields
+    }
+
+    if not fields_to_update:
+        return fetch_user_by_id(user_id)
+
+    assignments = [
+        f"{field} = :{field}"
+        for field in fields_to_update
+    ]
+
+    assignments.append(
+        "updated_at = CURRENT_TIMESTAMP"
+    )
+
+    query = text(f"""
+        UPDATE users
+        SET {", ".join(assignments)}
+        WHERE id = :user_id
+        RETURNING id;
+    """)
+
+    params = {
+        "user_id": user_id,
+        **fields_to_update
+    }
+
+    with engine.begin() as connection:
+        result = connection.execute(
+            query,
+            params
+        )
+
+        updated_user = result.fetchone()
+
+    if updated_user is None:
+        return None
+
+    return fetch_user_by_id(user_id)
+
+
+def update_user_status(
+    user_id: int,
+    active: bool
+):
+    query = text("""
+        UPDATE users
+        SET
+            active = :active,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = :user_id
+        RETURNING id;
+    """)
+
+    with engine.begin() as connection:
+        result = connection.execute(
+            query,
+            {
+                "user_id": user_id,
+                "active": active
+            }
+        )
+
+        updated_user = result.fetchone()
+
+    if updated_user is None:
+        return None
+
+    return fetch_user_by_id(user_id)
+
+
+def update_user_password(
+    user_id: int,
+    password_hash: str,
+    must_change_password: bool
+):
+    query = text("""
+        UPDATE users
+        SET
+            password_hash = :password_hash,
+            must_change_password = :must_change_password,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = :user_id
+        RETURNING id;
+    """)
+
+    with engine.begin() as connection:
+        result = connection.execute(
+            query,
+            {
+                "user_id": user_id,
+                "password_hash": password_hash,
+                "must_change_password": must_change_password
+            }
+        )
+
+        updated_user = result.fetchone()
+
+    if updated_user is None:
+        return None
+
+    return fetch_user_by_id(user_id)
+

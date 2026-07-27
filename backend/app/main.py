@@ -1,7 +1,17 @@
 from fastapi import FastAPI
 
 from app.database import check_database_connection
-from app.routers import categories, inventory_movements, products, reports, sales, suppliers
+from app.routers import (
+    auth,
+    categories,
+    inventory_movements,
+    products,
+    reports,
+    sales,
+    suppliers,
+    users
+)
+
 
 app = FastAPI(
     title="StockGuard PyME API",
@@ -9,6 +19,9 @@ app = FastAPI(
     version="0.1.0"
 )
 
+
+app.include_router(auth.router)
+app.include_router(users.router)
 app.include_router(categories.router)
 app.include_router(suppliers.router)
 app.include_router(products.router)
