@@ -1,10 +1,10 @@
 from decimal import Decimal
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from app.config import settings
 
-DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/stockguard_pyme"
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(settings.database_url)
 
 SessionLocal = sessionmaker(
     autocommit=False,
