@@ -126,7 +126,10 @@ def fetch_product_by_id(product_id: int):
 
     return dict(product._mapping)
 
-def create_product(product_data: dict):
+def create_product(
+    product_data: dict,
+    user_id: int
+):
     create_product_query = text("""
         INSERT INTO products (
             name,
@@ -170,14 +173,16 @@ def create_product(product_data: dict):
             movement_type,
             quantity,
             reason,
-            reference
+            reference,
+            performed_by_user_id
         )
         VALUES (
             :product_id,
             'ENTRADA',
             :quantity,
             :reason,
-            :reference
+            :reference,
+            :performed_by_user_id
         );
     """)
 
@@ -193,7 +198,8 @@ def create_product(product_data: dict):
                     "product_id": created_product["id"],
                     "quantity": created_product["current_stock"],
                     "reason": "Stock inicial al crear producto",
-                    "reference": "PRODUCT_CREATE"
+                    "reference": "PRODUCT_CREATE",
+                    "performed_by_user_id": user_id
                 }
             )
 
@@ -209,20 +215,32 @@ def fetch_inventory_movements():
             im.quantity,
             im.movement_date,
             im.reason,
-            im.reference
+            im.reference,
+            im.performed_by_user_id,
+            u.full_name AS performed_by_full_name,
+            u.username AS performed_by_username
         FROM inventory_movements im
         INNER JOIN products p
             ON im.product_id = p.id
+        LEFT JOIN users u
+            ON im.performed_by_user_id = u.id
         ORDER BY im.id DESC;
     """)
 
     with engine.connect() as connection:
         result = connection.execute(query)
-        movements = [dict(row._mapping) for row in result]
+
+        movements = [
+            dict(row._mapping)
+            for row in result
+        ]
 
     return movements
 
-def adjust_product_stock(adjustment_data: dict):
+def adjust_product_stock(
+    adjustment_data: dict,
+    user_id: int
+):
     product_query = text("""
         SELECT
             id,
@@ -249,14 +267,16 @@ def adjust_product_stock(adjustment_data: dict):
             movement_type,
             quantity,
             reason,
-            reference
+            reference,
+            performed_by_user_id
         )
         VALUES (
             :product_id,
             :movement_type,
             :quantity,
             :reason,
-            :reference
+            :reference,
+            :performed_by_user_id
         )
         RETURNING
             id,
@@ -265,7 +285,8 @@ def adjust_product_stock(adjustment_data: dict):
             quantity,
             movement_date,
             reason,
-            reference;
+            reference,
+            performed_by_user_id;
     """)
 
     product_id = adjustment_data["product_id"]
@@ -318,7 +339,8 @@ def adjust_product_stock(adjustment_data: dict):
                 "movement_type": movement_type,
                 "quantity": quantity,
                 "reason": adjustment_data["reason"],
-                "reference": adjustment_data.get("reference")
+                "reference": adjustment_data.get("reference"),
+                "performed_by_user_id": user_id
             }
         )
 
@@ -329,7 +351,10 @@ def adjust_product_stock(adjustment_data: dict):
         "movement": movement
     }
     
-def create_sale(sale_data: dict):
+def create_sale(
+    sale_data: dict,
+    user_id: int
+):
     product_query = text("""
         SELECT
             id,
@@ -343,20 +368,22 @@ def create_sale(sale_data: dict):
     """)
 
     create_sale_query = text("""
-    INSERT INTO sales (
-        total,
-        payment_method,
-        document_type,
-        document_number,
-        observation
-    )
-    VALUES (
-        :total,
-        :payment_method,
-        :document_type,
-        :document_number,
-        :observation
-    )
+        INSERT INTO sales (
+            total,
+            payment_method,
+            document_type,
+            document_number,
+            observation,
+            created_by_user_id
+        )
+        VALUES (
+            :total,
+            :payment_method,
+            :document_type,
+            :document_number,
+            :observation,
+            :created_by_user_id
+        )
     RETURNING
         id,
         sale_date,
@@ -364,7 +391,8 @@ def create_sale(sale_data: dict):
         payment_method,
         document_type,
         document_number,
-        observation;
+        observation,
+        created_by_user_id;
     """)
 
     create_detail_query = text("""
@@ -403,14 +431,16 @@ def create_sale(sale_data: dict):
             movement_type,
             quantity,
             reason,
-            reference
+            reference,
+            performed_by_user_id
         )
         VALUES (
             :product_id,
             'VENTA',
             :quantity,
             :reason,
-            :reference
+            :reference,
+            :performed_by_user_id
         );
     """)
 
@@ -483,7 +513,8 @@ def create_sale(sale_data: dict):
                 "payment_method": sale_data["payment_method"],
                 "document_type": sale_data.get("document_type"),
                 "document_number": sale_data.get("document_number"),
-                "observation": sale_data.get("observation")
+                "observation": sale_data.get("observation"),
+                "created_by_user_id": user_id
             })
 
         sale = dict(sale_result.fetchone()._mapping)
@@ -519,7 +550,8 @@ def create_sale(sale_data: dict):
                     "product_id": item["product_id"],
                     "quantity": item["quantity"],
                     "reason": "Venta registrada",
-                    "reference": f"SALE-{sale['id']}"
+                    "reference": f"SALE-{sale['id']}",
+                    "performed_by_user_id": user_id
                 }
             )
 
@@ -544,11 +576,17 @@ def fetch_sales(
             s.document_type,
             s.document_number,
             s.observation,
+            s.created_by_user_id,
+            u.full_name AS created_by_full_name,
+            u.username AS created_by_username,
             COUNT(sd.id) AS total_products,
             COALESCE(SUM(sd.quantity), 0) AS total_items
         FROM sales s
         LEFT JOIN sale_details sd
             ON s.id = sd.sale_id
+        LEFT JOIN users u
+            ON s.created_by_user_id = u.id
+            
     """
 
     where_clauses = []
@@ -585,7 +623,10 @@ def fetch_sales(
             s.payment_method,
             s.document_type,
             s.document_number,
-            s.observation
+            s.observation,
+            s.created_by_user_id,
+            u.full_name,
+            u.username
         ORDER BY s.id DESC;
     """
 
@@ -601,15 +642,20 @@ def fetch_sales(
 def fetch_sale_by_id(sale_id: int):
     sale_query = text("""
         SELECT
-            id,
-            sale_date,
-            total,
-            payment_method,
-            document_type,
-            document_number,
-            observation
-        FROM sales
-        WHERE id = :sale_id;
+            s.id,
+            s.sale_date,
+            s.total,
+            s.payment_method,
+            s.document_type,
+            s.document_number,
+            s.observation,
+            s.created_by_user_id,
+            u.full_name AS created_by_full_name,
+            u.username AS created_by_username
+        FROM sales s
+        LEFT JOIN users u
+            ON s.created_by_user_id = u.id
+        WHERE s.id = :sale_id;
     """)
 
     details_query = text("""
