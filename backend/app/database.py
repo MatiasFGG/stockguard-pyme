@@ -818,57 +818,119 @@ def fetch_low_stock_products():
 
     return products
 
-def fetch_sales_summary():
-    query = text("""
+def fetch_sales_summary(date_from=None, date_to=None):
+    base_query = """
+        WITH filtered_sales AS (
+            SELECT
+                id,
+                total
+            FROM sales s
+    """
+
+    where_clauses = []
+    params = {}
+
+    if date_from is not None:
+        where_clauses.append("s.sale_date::date >= :date_from")
+        params["date_from"] = date_from
+
+    if date_to is not None:
+        where_clauses.append("s.sale_date::date <= :date_to")
+        params["date_to"] = date_to
+
+    if where_clauses:
+        base_query += " WHERE " + " AND ".join(where_clauses)
+
+    base_query += """
+        )
         SELECT
-            (
-                SELECT COALESCE(SUM(total), 0)
-                FROM sales
+            COALESCE(
+                (
+                    SELECT SUM(total)
+                    FROM filtered_sales
+                ),
+                0
             ) AS total_sales_amount,
 
             (
                 SELECT COUNT(*)
-                FROM sales
+                FROM filtered_sales
             ) AS total_sales,
 
-            (
-                SELECT COALESCE(SUM(quantity), 0)
-                FROM sale_details
+            COALESCE(
+                (
+                    SELECT SUM(sd.quantity)
+                    FROM sale_details sd
+                    INNER JOIN filtered_sales fs
+                        ON sd.sale_id = fs.id
+                ),
+                0
             ) AS total_items_sold,
 
             CASE
                 WHEN (
                     SELECT COUNT(*)
-                    FROM sales
+                    FROM filtered_sales
                 ) = 0 THEN 0
                 ELSE ROUND(
                     (
                         SELECT COALESCE(SUM(total), 0)
-                        FROM sales
+                        FROM filtered_sales
                     ) / (
                         SELECT COUNT(*)
-                        FROM sales
+                        FROM filtered_sales
                     ),
                     2
                 )
             END AS average_sale_amount;
-    """)
+    """
+
+    query = text(base_query)
 
     with engine.connect() as connection:
-        result = connection.execute(query)
+        result = connection.execute(query, params)
         summary = result.fetchone()
 
     return dict(summary._mapping)
 
 
-def fetch_top_products(limit: int):
-    query = text("""
+def fetch_top_products(
+    limit: int,
+    date_from=None,
+    date_to=None
+):
+    base_query = """
+        WITH filtered_sales AS (
+            SELECT id
+            FROM sales s
+    """
+
+    where_clauses = []
+    params = {
+        "limit": limit
+    }
+
+    if date_from is not None:
+        where_clauses.append("s.sale_date::date >= :date_from")
+        params["date_from"] = date_from
+
+    if date_to is not None:
+        where_clauses.append("s.sale_date::date <= :date_to")
+        params["date_to"] = date_to
+
+    if where_clauses:
+        base_query += " WHERE " + " AND ".join(where_clauses)
+
+    base_query += """
+        )
         SELECT
             p.id AS product_id,
             p.name AS product_name,
             COALESCE(SUM(sd.quantity), 0) AS total_quantity_sold,
             COALESCE(SUM(sd.subtotal), 0) AS total_amount_sold
         FROM sale_details sd
+        INNER JOIN filtered_sales fs
+            ON sd.sale_id = fs.id
         INNER JOIN products p
             ON sd.product_id = p.id
         GROUP BY
@@ -878,14 +940,12 @@ def fetch_top_products(limit: int):
             total_quantity_sold DESC,
             total_amount_sold DESC
         LIMIT :limit;
-    """)
+    """
+
+    query = text(base_query)
 
     with engine.connect() as connection:
-        result = connection.execute(
-            query,
-            {"limit": limit}
-        )
-
+        result = connection.execute(query, params)
         products = [dict(row._mapping) for row in result]
 
     return products
