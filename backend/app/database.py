@@ -1127,3 +1127,125 @@ def update_supplier(supplier_id: int, supplier_data: dict):
         updated_supplier = result.fetchone()
 
     return dict(updated_supplier._mapping)
+
+def fetch_user_by_username(username: str):
+    query = text("""
+        SELECT
+            id,
+            full_name,
+            username,
+            email,
+            password_hash,
+            role,
+            active,
+            must_change_password,
+            created_at,
+            updated_at,
+            last_login_at
+        FROM users
+        WHERE LOWER(username) = LOWER(:username);
+    """)
+
+    with engine.connect() as connection:
+        result = connection.execute(
+            query,
+            {
+                "username": username.strip()
+            }
+        )
+
+        user = result.fetchone()
+
+    if user is None:
+        return None
+
+    return dict(user._mapping)
+
+
+def fetch_user_by_id(user_id: int):
+    query = text("""
+        SELECT
+            id,
+            full_name,
+            username,
+            email,
+            role,
+            active,
+            must_change_password,
+            created_at,
+            updated_at,
+            last_login_at
+        FROM users
+        WHERE id = :user_id;
+    """)
+
+    with engine.connect() as connection:
+        result = connection.execute(
+            query,
+            {
+                "user_id": user_id
+            }
+        )
+
+        user = result.fetchone()
+
+    if user is None:
+        return None
+
+    return dict(user._mapping)
+
+
+def create_user(user_data: dict):
+    query = text("""
+        INSERT INTO users (
+            full_name,
+            username,
+            email,
+            password_hash,
+            role,
+            active,
+            must_change_password
+        )
+        VALUES (
+            :full_name,
+            :username,
+            :email,
+            :password_hash,
+            :role,
+            :active,
+            :must_change_password
+        )
+        RETURNING
+            id,
+            full_name,
+            username,
+            email,
+            role,
+            active,
+            must_change_password,
+            created_at,
+            updated_at,
+            last_login_at;
+    """)
+
+    normalized_data = {
+        **user_data,
+        "full_name": user_data["full_name"].strip(),
+        "username": user_data["username"].strip(),
+        "email": (
+            user_data["email"].strip().lower()
+            if user_data.get("email")
+            else None
+        )
+    }
+
+    with engine.begin() as connection:
+        result = connection.execute(
+            query,
+            normalized_data
+        )
+
+        user = result.fetchone()
+
+    return dict(user._mapping)
+
