@@ -54,10 +54,12 @@ CREATE TABLE products (
 
 CREATE TABLE sales (
     id SERIAL PRIMARY KEY,
-    sale_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    total NUMERIC(10, 2) NOT NULL DEFAULT 0,
-    payment_method VARCHAR(50),
-    observation TEXT,
+    sale_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total NUMERIC(10, 2) NOT NULL CHECK (total >= 0),
+    payment_method VARCHAR(50) NOT NULL,
+    document_type VARCHAR(30),
+    document_number VARCHAR(50),
+    observation TEXT
 
     CONSTRAINT chk_sale_total
         CHECK (total >= 0)

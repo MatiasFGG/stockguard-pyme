@@ -26,6 +26,14 @@ class SaleCreate(BaseModel):
         "OTRO"
     ]
 
+    document_type: Literal[
+        "BOLETA",
+        "FACTURA",
+        "TICKET_INTERNO",
+        "SIN_DOCUMENTO"
+    ] | None = None
+
+    document_number: str | None = Field(default=None, max_length=50)
     observation: str | None = None
     items: list[SaleItemCreate] = Field(min_length=1)
 
@@ -39,6 +47,13 @@ def list_sales(
         "TRANSFERENCIA",
         "OTRO"
     ] | None = Query(default=None),
+    document_type: Literal[
+        "BOLETA",
+        "FACTURA",
+        "TICKET_INTERNO",
+        "SIN_DOCUMENTO"
+    ] | None = Query(default=None),
+    document_number: str | None = Query(default=None),
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None)
 ):
@@ -51,6 +66,8 @@ def list_sales(
     try:
         sales = fetch_sales(
             payment_method=payment_method,
+            document_type=document_type,
+            document_number=document_number,
             date_from=date_from,
             date_to=date_to
         )

@@ -343,22 +343,28 @@ def create_sale(sale_data: dict):
     """)
 
     create_sale_query = text("""
-        INSERT INTO sales (
-            total,
-            payment_method,
-            observation
-        )
-        VALUES (
-            :total,
-            :payment_method,
-            :observation
-        )
-        RETURNING
-            id,
-            sale_date,
-            total,
-            payment_method,
-            observation;
+    INSERT INTO sales (
+        total,
+        payment_method,
+        document_type,
+        document_number,
+        observation
+    )
+    VALUES (
+        :total,
+        :payment_method,
+        :document_type,
+        :document_number,
+        :observation
+    )
+    RETURNING
+        id,
+        sale_date,
+        total,
+        payment_method,
+        document_type,
+        document_number,
+        observation;
     """)
 
     create_detail_query = text("""
@@ -471,13 +477,14 @@ def create_sale(sale_data: dict):
             })
 
         sale_result = connection.execute(
-            create_sale_query,
+        create_sale_query,
             {
                 "total": total,
                 "payment_method": sale_data["payment_method"],
+                "document_type": sale_data.get("document_type"),
+                "document_number": sale_data.get("document_number"),
                 "observation": sale_data.get("observation")
-            }
-        )
+            })
 
         sale = dict(sale_result.fetchone()._mapping)
         sale_details = []
@@ -523,6 +530,8 @@ def create_sale(sale_data: dict):
     
 def fetch_sales(
     payment_method: str | None = None,
+    document_type: str | None = None,
+    document_number: str | None = None,
     date_from=None,
     date_to=None
 ):
@@ -532,6 +541,8 @@ def fetch_sales(
             s.sale_date,
             s.total,
             s.payment_method,
+            s.document_type,
+            s.document_number,
             s.observation,
             COUNT(sd.id) AS total_products,
             COALESCE(SUM(sd.quantity), 0) AS total_items
@@ -546,6 +557,14 @@ def fetch_sales(
     if payment_method is not None:
         where_clauses.append("s.payment_method = :payment_method")
         params["payment_method"] = payment_method
+
+    if document_type is not None:
+        where_clauses.append("s.document_type = :document_type")
+        params["document_type"] = document_type
+
+    if document_number is not None and document_number.strip() != "":
+        where_clauses.append("s.document_number ILIKE :document_number_pattern")
+        params["document_number_pattern"] = f"%{document_number}%"
 
     if date_from is not None:
         where_clauses.append("s.sale_date::date >= :date_from")
@@ -564,6 +583,8 @@ def fetch_sales(
             s.sale_date,
             s.total,
             s.payment_method,
+            s.document_type,
+            s.document_number,
             s.observation
         ORDER BY s.id DESC;
     """
@@ -584,6 +605,8 @@ def fetch_sale_by_id(sale_id: int):
             sale_date,
             total,
             payment_method,
+            document_type,
+            document_number,
             observation
         FROM sales
         WHERE id = :sale_id;
