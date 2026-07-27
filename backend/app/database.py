@@ -521,8 +521,12 @@ def create_sale(sale_data: dict):
         "details": sale_details
     }    
     
-def fetch_sales():
-    query = text("""
+def fetch_sales(
+    payment_method: str | None = None,
+    date_from=None,
+    date_to=None
+):
+    base_query = """
         SELECT
             s.id,
             s.sale_date,
@@ -534,6 +538,27 @@ def fetch_sales():
         FROM sales s
         LEFT JOIN sale_details sd
             ON s.id = sd.sale_id
+    """
+
+    where_clauses = []
+    params = {}
+
+    if payment_method is not None:
+        where_clauses.append("s.payment_method = :payment_method")
+        params["payment_method"] = payment_method
+
+    if date_from is not None:
+        where_clauses.append("s.sale_date::date >= :date_from")
+        params["date_from"] = date_from
+
+    if date_to is not None:
+        where_clauses.append("s.sale_date::date <= :date_to")
+        params["date_to"] = date_to
+
+    if where_clauses:
+        base_query += " WHERE " + " AND ".join(where_clauses)
+
+    base_query += """
         GROUP BY
             s.id,
             s.sale_date,
@@ -541,10 +566,12 @@ def fetch_sales():
             s.payment_method,
             s.observation
         ORDER BY s.id DESC;
-    """)
+    """
+
+    query = text(base_query)
 
     with engine.connect() as connection:
-        result = connection.execute(query)
+        result = connection.execute(query, params)
         sales = [dict(row._mapping) for row in result]
 
     return sales

@@ -1,6 +1,7 @@
+from datetime import date
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from app.database import create_sale, fetch_sale_by_id, fetch_sales
@@ -30,9 +31,30 @@ class SaleCreate(BaseModel):
 
 
 @router.get("")
-def list_sales():
+def list_sales(
+    payment_method: Literal[
+        "EFECTIVO",
+        "DEBITO",
+        "CREDITO",
+        "TRANSFERENCIA",
+        "OTRO"
+    ] | None = Query(default=None),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None)
+):
+    if date_from is not None and date_to is not None and date_from > date_to:
+        raise HTTPException(
+            status_code=400,
+            detail="La fecha inicial no puede ser mayor que la fecha final"
+        )
+
     try:
-        sales = fetch_sales()
+        sales = fetch_sales(
+            payment_method=payment_method,
+            date_from=date_from,
+            date_to=date_to
+        )
+
         return sales
     except Exception:
         raise HTTPException(
