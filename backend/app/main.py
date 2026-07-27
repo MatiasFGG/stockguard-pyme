@@ -1,5 +1,8 @@
 from fastapi import FastAPI
 
+from fastapi.middleware.cors import CORSMiddleware
+from app.config import settings
+
 from app.database import check_database_connection
 from app.routers import (
     auth,
@@ -17,6 +20,31 @@ app = FastAPI(
     title="StockGuard PyME API",
     description="API para la gestión de inventario y ventas de negocios pequeños.",
     version="0.1.0"
+)
+
+allowed_origins = [
+    origin.strip()
+    for origin in settings.cors_origins.split(",")
+    if origin.strip()
+]
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=False,
+    allow_methods=[
+        "GET",
+        "POST",
+        "PATCH",
+        "PUT",
+        "DELETE",
+        "OPTIONS"
+    ],
+    allow_headers=[
+        "Authorization",
+        "Content-Type"
+    ]
 )
 
 

@@ -13,11 +13,17 @@ oauth2_scheme = OAuth2PasswordBearer(
 )
 
 
-def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)]
+def get_authenticated_user(
+    token: Annotated[
+        str,
+        Depends(oauth2_scheme)
+    ]
 ) -> dict:
     """
-    Identifica al usuario conectado mediante su token JWT.
+    Valida el token e identifica al usuario autenticado.
+
+    Permite continuar aunque el usuario todavía tenga
+    una contraseña temporal.
     """
 
     credentials_exception = HTTPException(
@@ -57,6 +63,33 @@ def get_current_user(
 
     return user
 
+
+def get_current_user(
+    authenticated_user: Annotated[
+        dict,
+        Depends(get_authenticated_user)
+    ]
+) -> dict:
+    """
+    Permite utilizar el sistema solamente después de
+    reemplazar la contraseña temporal.
+    """
+
+    if authenticated_user["must_change_password"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "PASSWORD_CHANGE_REQUIRED",
+                "message": (
+                    "Debes cambiar tu contraseña temporal "
+                    "antes de continuar."
+                )
+            }
+        )
+
+    return authenticated_user
+
+
 def require_admin(
     current_user: Annotated[
         dict,
@@ -74,3 +107,4 @@ def require_admin(
         )
 
     return current_user
+

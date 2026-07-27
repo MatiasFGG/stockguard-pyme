@@ -2,7 +2,6 @@ from decimal import Decimal
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-
 DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/stockguard_pyme"
 
 engine = create_engine(DATABASE_URL)
