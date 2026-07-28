@@ -13,8 +13,14 @@ import {
   type FormEvent,
 } from "react";
 
+import { getCategories } from "../api/categoryApi";
 import { getProducts } from "../api/productApi";
+import { getSuppliers } from "../api/supplierApi";
+
+import type { Category } from "../types/category";
 import type { Product } from "../types/product";
+import type { Supplier } from "../types/supplier";
+
 import { formatCurrency } from "../utils/formatCurrency";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
 
@@ -26,8 +32,16 @@ type ActiveFilter =
   | "inactive";
 
 function ProductsPage() {
-  const [products, setProducts] = useState<
-    Product[]
+  const [products, setProducts] = useState<Product[]>(
+    [],
+  );
+
+  const [categories, setCategories] = useState<
+    Category[]
+  >([]);
+
+  const [suppliers, setSuppliers] = useState<
+    Supplier[]
   >([]);
 
   const [searchInput, setSearchInput] =
@@ -39,14 +53,71 @@ function ProductsPage() {
   const [activeFilter, setActiveFilter] =
     useState<ActiveFilter>("all");
 
+  const [
+    selectedCategoryId,
+    setSelectedCategoryId,
+  ] = useState("");
+
+  const [
+    selectedSupplierId,
+    setSelectedSupplierId,
+  ] = useState("");
+
   const [isLoading, setIsLoading] =
     useState(true);
 
   const [errorMessage, setErrorMessage] =
     useState("");
 
+  const [
+    filterOptionsError,
+    setFilterOptionsError,
+  ] = useState("");
+
   const [reloadKey, setReloadKey] =
     useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadFilterOptions() {
+      setFilterOptionsError("");
+
+      try {
+        const [
+          categoryList,
+          supplierList,
+        ] = await Promise.all([
+          getCategories(controller.signal),
+          getSuppliers(controller.signal),
+        ]);
+
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setCategories(categoryList);
+        setSuppliers(supplierList);
+      } catch (error: unknown) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setFilterOptionsError(
+          getApiErrorMessage(
+            error,
+            "No fue posible cargar las categorías y proveedores.",
+          ),
+        );
+      }
+    }
+
+    void loadFilterOptions();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -65,6 +136,15 @@ function ProductsPage() {
           {
             search:
               submittedSearch || undefined,
+
+            category_id: selectedCategoryId
+              ? Number(selectedCategoryId)
+              : undefined,
+
+            supplier_id: selectedSupplierId
+              ? Number(selectedSupplierId)
+              : undefined,
+
             active,
           },
           controller.signal,
@@ -99,6 +179,8 @@ function ProductsPage() {
   }, [
     activeFilter,
     reloadKey,
+    selectedCategoryId,
+    selectedSupplierId,
     submittedSearch,
   ]);
 
@@ -253,6 +335,66 @@ function ProductsPage() {
           <div className="products-toolbar__actions">
             <label
               className="products-filter"
+              htmlFor="product-category-filter"
+            >
+              <span>Categoría</span>
+
+              <select
+                id="product-category-filter"
+                value={selectedCategoryId}
+                onChange={(event) =>
+                  setSelectedCategoryId(
+                    event.target.value,
+                  )
+                }
+              >
+                <option value="">
+                  Todas
+                </option>
+
+                {categories.map((category) => (
+                  <option
+                    key={category.id}
+                    value={category.id}
+                  >
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label
+              className="products-filter"
+              htmlFor="product-supplier-filter"
+            >
+              <span>Proveedor</span>
+
+              <select
+                id="product-supplier-filter"
+                value={selectedSupplierId}
+                onChange={(event) =>
+                  setSelectedSupplierId(
+                    event.target.value,
+                  )
+                }
+              >
+                <option value="">
+                  Todos
+                </option>
+
+                {suppliers.map((supplier) => (
+                  <option
+                    key={supplier.id}
+                    value={supplier.id}
+                  >
+                    {supplier.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label
+              className="products-filter"
               htmlFor="product-status-filter"
             >
               <span>Estado</span>
@@ -300,6 +442,19 @@ function ProductsPage() {
             </button>
           </div>
         </div>
+
+        {filterOptionsError && (
+          <div
+            className="products-filter-warning"
+            role="alert"
+          >
+            <AlertTriangle size={18} />
+
+            <span>
+              {filterOptionsError}
+            </span>
+          </div>
+        )}
 
         {errorMessage && (
           <div
@@ -353,7 +508,7 @@ function ProductsPage() {
 
               <p>
                 Prueba con otra búsqueda o cambia
-                el filtro de estado.
+                los filtros seleccionados.
               </p>
             </div>
           )}
