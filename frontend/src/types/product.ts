@@ -4,11 +4,11 @@ export interface Product {
   description: string | null;
   barcode: string | null;
 
-  purchase_price: number;
-  sale_price: number;
+  purchase_price: number | string;
+  sale_price: number | string;
 
-  current_stock: number;
-  minimum_stock: number;
+  current_stock: number | string;
+  minimum_stock: number | string;
 
   active: boolean;
 
@@ -24,4 +24,19 @@ export interface ProductListParams {
   category_id?: number;
   supplier_id?: number;
   active?: boolean;
+}
+
+export interface ProductCreateRequest {
+  name: string;
+  description: string | null;
+  barcode: string | null;
+
+  purchase_price: number;
+  sale_price: number;
+
+  current_stock: number;
+  minimum_stock: number;
+
+  category_id: number;
+  supplier_id: number | null;
 }
