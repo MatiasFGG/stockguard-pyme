@@ -2,8 +2,12 @@ import {
   AlertTriangle,
   Boxes,
   CheckCircle2,
+  Eye,
   PackageCheck,
+  Pencil,
   Plus,
+  Power,
+  PowerOff,
   RefreshCw,
   Search,
 } from "lucide-react";
@@ -20,6 +24,9 @@ import { getProducts } from "../api/productApi";
 import { getSuppliers } from "../api/supplierApi";
 
 import CreateProductModal from "../components/CreateProductModal";
+import EditProductModal from "../components/EditProductModal";
+import ProductDetailModal from "../components/ProductDetailModal";
+import ProductStatusModal from "../components/ProductStatusModal";
 
 import { useAuth } from "../contexts/AuthContext";
 
@@ -40,17 +47,14 @@ type ActiveFilter =
 function ProductsPage() {
   const { user } = useAuth();
 
-  const [products, setProducts] = useState<
-    Product[]
-  >([]);
+  const [products, setProducts] =
+    useState<Product[]>([]);
 
-  const [categories, setCategories] = useState<
-    Category[]
-  >([]);
+  const [categories, setCategories] =
+    useState<Category[]>([]);
 
-  const [suppliers, setSuppliers] = useState<
-    Supplier[]
-  >([]);
+  const [suppliers, setSuppliers] =
+    useState<Supplier[]>([]);
 
   const [searchInput, setSearchInput] =
     useState("");
@@ -92,6 +96,21 @@ function ProductsPage() {
     isCreateModalOpen,
     setIsCreateModalOpen,
   ] = useState(false);
+
+  const [
+    selectedProductId,
+    setSelectedProductId,
+  ] = useState<number | null>(null);
+
+  const [
+    editingProductId,
+    setEditingProductId,
+  ] = useState<number | null>(null);
+
+  const [
+    statusProduct,
+    setStatusProduct,
+  ] = useState<Product | null>(null);
 
   const isAdministrator =
     user?.role === "ADMINISTRADOR";
@@ -248,7 +267,9 @@ function ProductsPage() {
   }
 
   function handleRefresh() {
-    setReloadKey((current) => current + 1);
+    setReloadKey(
+      (currentValue) => currentValue + 1,
+    );
   }
 
   function handleProductCreated() {
@@ -262,7 +283,29 @@ function ProductsPage() {
     setSelectedCategoryId("");
     setSelectedSupplierId("");
 
-    setReloadKey((current) => current + 1);
+    setReloadKey(
+      (currentValue) => currentValue + 1,
+    );
+  }
+
+  function handleProductUpdated() {
+    setSuccessMessage(
+      "Producto actualizado correctamente.",
+    );
+
+    setReloadKey(
+      (currentValue) => currentValue + 1,
+    );
+  }
+
+  function handleProductStatusChanged(
+    message: string,
+  ) {
+    setSuccessMessage(message);
+
+    setReloadKey(
+      (currentValue) => currentValue + 1,
+    );
   }
 
   function getStockStatus(product: Product) {
@@ -352,9 +395,7 @@ function ProductsPage() {
                 Productos mostrados
               </span>
 
-              <strong>
-                {summary.total}
-              </strong>
+              <strong>{summary.total}</strong>
             </div>
           </article>
 
@@ -366,9 +407,7 @@ function ProductsPage() {
             <div>
               <span>Productos activos</span>
 
-              <strong>
-                {summary.active}
-              </strong>
+              <strong>{summary.active}</strong>
             </div>
           </article>
 
@@ -380,9 +419,7 @@ function ProductsPage() {
             <div>
               <span>Con stock bajo</span>
 
-              <strong>
-                {summary.lowStock}
-              </strong>
+              <strong>{summary.lowStock}</strong>
             </div>
           </article>
         </div>
@@ -541,10 +578,7 @@ function ProductsPage() {
               role="alert"
             >
               <AlertTriangle size={18} />
-
-              <span>
-                {filterOptionsError}
-              </span>
+              <span>{filterOptionsError}</span>
             </div>
           )}
 
@@ -561,9 +595,7 @@ function ProductsPage() {
                   productos
                 </strong>
 
-                <span>
-                  {errorMessage}
-                </span>
+                <span>{errorMessage}</span>
               </div>
 
               <button
@@ -620,98 +652,158 @@ function ProductsPage() {
                       <th>Categoría</th>
                       <th>Proveedor</th>
                       <th>Stock</th>
-                      <th>
-                        Precio de venta
-                      </th>
+                      <th>Precio de venta</th>
                       <th>Estado</th>
+
+                      <th className="products-table__actions">
+                        Acciones
+                      </th>
                     </tr>
                   </thead>
 
                   <tbody>
-                    {products.map(
-                      (product) => {
-                        const stockStatus =
-                          getStockStatus(
-                            product,
-                          );
+                    {products.map((product) => {
+                      const stockStatus =
+                        getStockStatus(product);
 
-                        return (
-                          <tr key={product.id}>
-                            <td>
-                              <div className="product-identity">
-                                <strong>
-                                  {product.name}
-                                </strong>
+                      return (
+                        <tr key={product.id}>
+                          <td>
+                            <div className="product-identity">
+                              <strong>
+                                {product.name}
+                              </strong>
 
-                                <span>
-                                  {product.barcode
-                                    ? `Código: ${product.barcode}`
-                                    : "Sin código de barras"}
-                                </span>
-                              </div>
-                            </td>
+                              <span>
+                                {product.barcode
+                                  ? `Código: ${product.barcode}`
+                                  : "Sin código de barras"}
+                              </span>
+                            </div>
+                          </td>
 
-                            <td>
-                              {
-                                product.category_name
-                              }
-                            </td>
+                          <td>
+                            {product.category_name}
+                          </td>
 
-                            <td>
-                              {product.supplier_name ??
-                                "Sin proveedor"}
-                            </td>
+                          <td>
+                            {product.supplier_name ??
+                              "Sin proveedor"}
+                          </td>
 
-                            <td>
-                              <div className="product-stock">
-                                <strong>
-                                  {
-                                    product.current_stock
-                                  }
-                                </strong>
+                          <td>
+                            <div className="product-stock">
+                              <strong>
+                                {product.current_stock}
+                              </strong>
 
-                                <span>
-                                  Mínimo:{" "}
-                                  {
-                                    product.minimum_stock
-                                  }
-                                </span>
+                              <span>
+                                Mínimo:{" "}
+                                {product.minimum_stock}
+                              </span>
 
-                                <small
-                                  className={
-                                    stockStatus.className
-                                  }
-                                >
-                                  {
-                                    stockStatus.label
-                                  }
-                                </small>
-                              </div>
-                            </td>
-
-                            <td className="product-price">
-                              {formatCurrency(
-                                product.sale_price,
-                              )}
-                            </td>
-
-                            <td>
-                              <span
+                              <small
                                 className={
-                                  product.active
-                                    ? "product-state product-state--active"
-                                    : "product-state product-state--inactive"
+                                  stockStatus.className
                                 }
                               >
-                                {product.active
-                                  ? "Activo"
-                                  : "Inactivo"}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      },
-                    )}
+                                {stockStatus.label}
+                              </small>
+                            </div>
+                          </td>
+
+                          <td className="product-price">
+                            {formatCurrency(
+                              product.sale_price,
+                            )}
+                          </td>
+
+                          <td>
+                            <span
+                              className={
+                                product.active
+                                  ? "product-state product-state--active"
+                                  : "product-state product-state--inactive"
+                              }
+                            >
+                              {product.active
+                                ? "Activo"
+                                : "Inactivo"}
+                            </span>
+                          </td>
+
+                          <td className="products-table__actions">
+                            <div className="product-row-actions">
+                              <button
+                                type="button"
+                                className="product-row-action"
+                                aria-label={`Ver detalle de ${product.name}`}
+                                title="Ver detalle"
+                                onClick={() =>
+                                  setSelectedProductId(
+                                    product.id,
+                                  )
+                                }
+                              >
+                                <Eye size={18} />
+                              </button>
+
+                              {isAdministrator && (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="product-row-action product-row-action--edit"
+                                    aria-label={`Editar ${product.name}`}
+                                    title="Editar producto"
+                                    onClick={() =>
+                                      setEditingProductId(
+                                        product.id,
+                                      )
+                                    }
+                                  >
+                                    <Pencil size={17} />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    className={
+                                      product.active
+                                        ? "product-row-action product-row-action--deactivate"
+                                        : "product-row-action product-row-action--activate"
+                                    }
+                                    aria-label={
+                                      product.active
+                                        ? `Desactivar ${product.name}`
+                                        : `Reactivar ${product.name}`
+                                    }
+                                    title={
+                                      product.active
+                                        ? "Desactivar producto"
+                                        : "Reactivar producto"
+                                    }
+                                    onClick={() =>
+                                      setStatusProduct(
+                                        product,
+                                      )
+                                    }
+                                  >
+                                    {product.active ? (
+                                      <PowerOff
+                                        size={17}
+                                      />
+                                    ) : (
+                                      <Power
+                                        size={17}
+                                      />
+                                    )}
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -727,6 +819,36 @@ function ProductsPage() {
           setIsCreateModalOpen(false)
         }
         onCreated={handleProductCreated}
+      />
+
+      <ProductDetailModal
+        isOpen={selectedProductId !== null}
+        productId={selectedProductId}
+        isAdministrator={isAdministrator}
+        onClose={() =>
+          setSelectedProductId(null)
+        }
+      />
+
+      <EditProductModal
+        isOpen={editingProductId !== null}
+        productId={editingProductId}
+        categories={categories}
+        suppliers={suppliers}
+        onClose={() =>
+          setEditingProductId(null)
+        }
+        onUpdated={handleProductUpdated}
+      />
+
+      <ProductStatusModal
+        product={statusProduct}
+        onClose={() =>
+          setStatusProduct(null)
+        }
+        onStatusChanged={
+          handleProductStatusChanged
+        }
       />
     </>
   );

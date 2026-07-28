@@ -40,3 +40,17 @@ export interface ProductCreateRequest {
   category_id: number;
   supplier_id: number | null;
 }
+
+export interface ProductUpdateRequest {
+  name: string;
+  description: string | null;
+  barcode: string | null;
+
+  purchase_price: number;
+  sale_price: number;
+
+  minimum_stock: number;
+
+  category_id: number;
+  supplier_id: number | null;
+}
