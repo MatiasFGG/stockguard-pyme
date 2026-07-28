@@ -114,9 +114,10 @@ function NewSaleModal({
     setScannerMessage("");
     setIsSubmitting(false);
 
-    const timeoutId = window.setTimeout(() => {
-      searchInputRef.current?.focus();
-    }, 0);
+    const timeoutId =
+      window.setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 0);
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -150,16 +151,21 @@ function NewSaleModal({
         handleKeyDown,
       );
     };
-  }, [isOpen, isSubmitting, onClose]);
+  }, [
+    isOpen,
+    isSubmitting,
+    onClose,
+  ]);
 
   useEffect(() => {
     if (!scannerMessage) {
       return;
     }
 
-    const timeoutId = window.setTimeout(() => {
-      setScannerMessage("");
-    }, 2500);
+    const timeoutId =
+      window.setTimeout(() => {
+        setScannerMessage("");
+      }, 2500);
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -187,11 +193,16 @@ function NewSaleModal({
           productName.includes(
             normalizedSearch,
           ) ||
-          barcode.includes(normalizedSearch)
+          barcode.includes(
+            normalizedSearch,
+          )
         );
       })
       .slice(0, 6);
-  }, [normalizedSearch, products]);
+  }, [
+    normalizedSearch,
+    products,
+  ]);
 
   const cartSummary = useMemo(() => {
     return cart.reduce(
@@ -240,7 +251,9 @@ function NewSaleModal({
     );
 
     if (
-      !Number.isFinite(availableStock) ||
+      !Number.isFinite(
+        availableStock,
+      ) ||
       availableStock <= 0
     ) {
       setErrorMessage(
@@ -302,11 +315,7 @@ function NewSaleModal({
     focusScannerInput();
   }
 
-  function handleProductSearch(
-    event: FormEvent<HTMLFormElement>,
-  ) {
-    event.preventDefault();
-
+  function handleProductSearch() {
     const query = searchTerm.trim();
 
     if (!query) {
@@ -321,7 +330,8 @@ function NewSaleModal({
     const exactBarcodeProduct =
       products.find(
         (product) =>
-          product.barcode?.trim() === query,
+          product.barcode?.trim() ===
+          query,
       );
 
     if (exactBarcodeProduct) {
@@ -342,12 +352,18 @@ function NewSaleModal({
       );
 
     if (exactNameProduct) {
-      addProductToCart(exactNameProduct);
+      addProductToCart(
+        exactNameProduct,
+      );
+
       return;
     }
 
     if (searchResults.length === 1) {
-      addProductToCart(searchResults[0]);
+      addProductToCart(
+        searchResults[0],
+      );
+
       return;
     }
 
@@ -412,7 +428,9 @@ function NewSaleModal({
     focusScannerInput();
   }
 
-  function removeProduct(productId: number) {
+  function removeProduct(
+    productId: number,
+  ) {
     setCart((currentCart) =>
       currentCart.filter(
         (item) =>
@@ -502,7 +520,8 @@ function NewSaleModal({
     event: MouseEvent<HTMLDivElement>,
   ) {
     if (
-      event.target === event.currentTarget &&
+      event.target ===
+        event.currentTarget &&
       !isSubmitting
     ) {
       onClose();
@@ -532,15 +551,18 @@ function NewSaleModal({
             </div>
 
             <div>
-              <span>Operación de venta</span>
+              <span>
+                Operación de venta
+              </span>
 
               <h2 id="new-sale-title">
                 Nueva venta
               </h2>
 
               <p>
-                Escanea productos o agrégalos
-                manualmente al carrito.
+                Escanea productos o
+                agrégalos manualmente al
+                carrito.
               </p>
             </div>
           </div>
@@ -566,8 +588,13 @@ function NewSaleModal({
                 className="new-sale-error"
                 role="alert"
               >
-                <AlertTriangle size={19} />
-                <span>{errorMessage}</span>
+                <AlertTriangle
+                  size={19}
+                />
+
+                <span>
+                  {errorMessage}
+                </span>
               </div>
             )}
 
@@ -576,8 +603,13 @@ function NewSaleModal({
                 className="new-sale-success"
                 role="status"
               >
-                <CheckCircle2 size={19} />
-                <span>{scannerMessage}</span>
+                <CheckCircle2
+                  size={19}
+                />
+
+                <span>
+                  {scannerMessage}
+                </span>
               </div>
             )}
 
@@ -592,8 +624,9 @@ function NewSaleModal({
                 </div>
 
                 <small>
-                  Compatible con lector USB o
-                  Bluetooth en modo teclado
+                  Compatible con lector USB
+                  o Bluetooth en modo
+                  teclado
                 </small>
               </div>
 
@@ -612,6 +645,15 @@ function NewSaleModal({
 
                       setErrorMessage("");
                     }}
+                    onKeyDown={(event) => {
+                      if (
+                        event.key === "Enter"
+                      ) {
+                        event.preventDefault();
+
+                        handleProductSearch();
+                      }
+                    }}
                     placeholder="Escanea el código o escribe el producto..."
                     autoComplete="off"
                     disabled={isSubmitting}
@@ -621,21 +663,19 @@ function NewSaleModal({
                 <button
                   type="button"
                   className="new-sale-add-button"
-                  onClick={() => {
-                    const form =
-                      searchInputRef.current
-                        ?.form;
-
-                    form?.requestSubmit();
-                  }}
+                  onClick={
+                    handleProductSearch
+                  }
                   disabled={isSubmitting}
                 >
                   <Plus size={18} />
+
                   <span>Agregar</span>
                 </button>
               </div>
 
-              {searchResults.length > 0 && (
+              {searchResults.length >
+                0 && (
                 <div className="new-sale-results">
                   {searchResults.map(
                     (product) => {
@@ -669,7 +709,9 @@ function NewSaleModal({
 
                             <div>
                               <strong>
-                                {product.name}
+                                {
+                                  product.name
+                                }
                               </strong>
 
                               <span>
@@ -705,7 +747,9 @@ function NewSaleModal({
             <section className="new-sale-cart-section">
               <div className="new-sale-section-title">
                 <div>
-                  <ShoppingCart size={20} />
+                  <ShoppingCart
+                    size={20}
+                  />
 
                   <span>
                     Productos de la venta
@@ -720,23 +764,27 @@ function NewSaleModal({
 
               {cart.length === 0 ? (
                 <div className="new-sale-empty-cart">
-                  <ShoppingCart size={38} />
+                  <ShoppingCart
+                    size={38}
+                  />
 
                   <strong>
                     El carrito está vacío
                   </strong>
 
                   <span>
-                    Escanea o busca un producto
-                    para comenzar.
+                    Escanea o busca un
+                    producto para comenzar.
                   </span>
                 </div>
               ) : (
                 <div className="new-sale-cart">
                   {cart.map((item) => {
-                    const unitPrice = Number(
-                      item.product.sale_price,
-                    );
+                    const unitPrice =
+                      Number(
+                        item.product
+                          .sale_price,
+                      );
 
                     const subtotal =
                       unitPrice *
@@ -744,16 +792,22 @@ function NewSaleModal({
 
                     return (
                       <article
-                        key={item.product.id}
+                        key={
+                          item.product.id
+                        }
                         className="new-sale-cart-item"
                       >
                         <div className="new-sale-cart-item__product">
                           <strong>
-                            {item.product.name}
+                            {
+                              item.product
+                                .name
+                            }
                           </strong>
 
                           <span>
-                            {item.product.barcode
+                            {item.product
+                              .barcode
                               ? `Código: ${item.product.barcode}`
                               : `Producto #${item.product.id}`}
                           </span>
@@ -790,7 +844,9 @@ function NewSaleModal({
                                   1,
                               )
                             }
-                            disabled={isSubmitting}
+                            disabled={
+                              isSubmitting
+                            }
                           >
                             <ChevronDown
                               size={17}
@@ -808,7 +864,9 @@ function NewSaleModal({
                               item.quantity
                             }
                             aria-label={`Cantidad de ${item.product.name}`}
-                            onChange={(event) => {
+                            onChange={(
+                              event,
+                            ) => {
                               const value =
                                 Number(
                                   event.target
@@ -827,7 +885,9 @@ function NewSaleModal({
                                 );
                               }
                             }}
-                            disabled={isSubmitting}
+                            disabled={
+                              isSubmitting
+                            }
                           />
 
                           <button
@@ -840,7 +900,9 @@ function NewSaleModal({
                                   1,
                               )
                             }
-                            disabled={isSubmitting}
+                            disabled={
+                              isSubmitting
+                            }
                           >
                             <ChevronUp
                               size={17}
@@ -849,7 +911,9 @@ function NewSaleModal({
                         </div>
 
                         <div className="new-sale-cart-item__subtotal">
-                          <span>Subtotal</span>
+                          <span>
+                            Subtotal
+                          </span>
 
                           <strong>
                             {formatCurrency(
@@ -868,7 +932,9 @@ function NewSaleModal({
                               item.product.id,
                             )
                           }
-                          disabled={isSubmitting}
+                          disabled={
+                            isSubmitting
+                          }
                         >
                           <Trash2 size={18} />
                         </button>
@@ -882,7 +948,9 @@ function NewSaleModal({
             <section className="new-sale-information">
               <div className="new-sale-section-title">
                 <div>
-                  <ReceiptText size={20} />
+                  <ReceiptText
+                    size={20}
+                  />
 
                   <span>
                     Información de pago
@@ -892,7 +960,9 @@ function NewSaleModal({
 
               <div className="new-sale-fields-grid">
                 <label className="new-sale-field">
-                  <span>Método de pago</span>
+                  <span>
+                    Método de pago
+                  </span>
 
                   <select
                     value={paymentMethod}
@@ -907,7 +977,10 @@ function NewSaleModal({
                     {Object.entries(
                       paymentMethodLabels,
                     ).map(
-                      ([value, label]) => (
+                      ([
+                        value,
+                        label,
+                      ]) => (
                         <option
                           key={value}
                           value={value}
@@ -932,10 +1005,14 @@ function NewSaleModal({
                           | ""
                           | DocumentType;
 
-                      setDocumentType(value);
+                      setDocumentType(
+                        value,
+                      );
 
                       if (!value) {
-                        setDocumentNumber("");
+                        setDocumentNumber(
+                          "",
+                        );
                       }
                     }}
                     disabled={isSubmitting}
@@ -980,7 +1057,9 @@ function NewSaleModal({
               <label className="new-sale-field">
                 <span>
                   Observación{" "}
-                  <small>(opcional)</small>
+                  <small>
+                    (opcional)
+                  </small>
                 </span>
 
                 <textarea
@@ -1001,7 +1080,9 @@ function NewSaleModal({
 
           <footer className="new-sale-footer">
             <div className="new-sale-total">
-              <span>Total estimado</span>
+              <span>
+                Total estimado
+              </span>
 
               <strong>
                 {formatCurrency(
@@ -1010,8 +1091,9 @@ function NewSaleModal({
               </strong>
 
               <small>
-                El backend verificará precios y
-                stock al confirmar.
+                El backend verificará
+                precios y stock al
+                confirmar.
               </small>
             </div>
 

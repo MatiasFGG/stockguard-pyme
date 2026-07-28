@@ -39,6 +39,7 @@ const paymentMethodLabels: Record<
   DEBITO: "Débito",
   CREDITO: "Crédito",
   TRANSFERENCIA: "Transferencia",
+  OTRO: "Otro",
 };
 
 const documentTypeLabels: Record<
@@ -70,7 +71,10 @@ function SaleDetailModal({
       return;
     }
 
-    const controller = new AbortController();
+    const currentSaleId = saleId;
+
+    const controller =
+      new AbortController();
 
     async function loadSaleDetail() {
       setIsLoading(true);
@@ -78,16 +82,21 @@ function SaleDetailModal({
       setSaleDetail(null);
 
       try {
-        const result = await getSaleById(
-          saleId,
-          controller.signal,
-        );
+        const result =
+          await getSaleById(
+            currentSaleId,
+            controller.signal,
+          );
 
-        if (!controller.signal.aborted) {
+        if (
+          !controller.signal.aborted
+        ) {
           setSaleDetail(result);
         }
       } catch (error: unknown) {
-        if (controller.signal.aborted) {
+        if (
+          controller.signal.aborted
+        ) {
           return;
         }
 
@@ -98,7 +107,9 @@ function SaleDetailModal({
           ),
         );
       } finally {
-        if (!controller.signal.aborted) {
+        if (
+          !controller.signal.aborted
+        ) {
           setIsLoading(false);
         }
       }
@@ -140,15 +151,22 @@ function SaleDetailModal({
   function handleOverlayClick(
     event: MouseEvent<HTMLDivElement>,
   ) {
-    if (event.target === event.currentTarget) {
+    if (
+      event.target ===
+      event.currentTarget
+    ) {
       onClose();
     }
   }
 
-  function formatDate(value: string) {
+  function formatDate(
+    value: string,
+  ) {
     const date = new Date(value);
 
-    if (Number.isNaN(date.getTime())) {
+    if (
+      Number.isNaN(date.getTime())
+    ) {
       return value;
     }
 
@@ -184,15 +202,18 @@ function SaleDetailModal({
             </div>
 
             <div>
-              <span>Comprobante de venta</span>
+              <span>
+                Comprobante de venta
+              </span>
 
               <h2 id="sale-detail-title">
                 Venta #{saleId}
               </h2>
 
               <p>
-                Información general y productos
-                incluidos en la operación.
+                Información general y
+                productos incluidos en la
+                operación.
               </p>
             </div>
           </div>
@@ -219,27 +240,34 @@ function SaleDetailModal({
               />
 
               <span>
-                Cargando detalle de la venta...
+                Cargando detalle de la
+                venta...
               </span>
             </div>
           )}
 
-          {!isLoading && errorMessage && (
-            <div
-              className="sale-detail-error"
-              role="alert"
-            >
-              <AlertTriangle size={20} />
+          {!isLoading &&
+            errorMessage && (
+              <div
+                className="sale-detail-error"
+                role="alert"
+              >
+                <AlertTriangle
+                  size={20}
+                />
 
-              <div>
-                <strong>
-                  No se pudo cargar la venta
-                </strong>
+                <div>
+                  <strong>
+                    No se pudo cargar la
+                    venta
+                  </strong>
 
-                <span>{errorMessage}</span>
+                  <span>
+                    {errorMessage}
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {!isLoading &&
             !errorMessage &&
@@ -247,7 +275,9 @@ function SaleDetailModal({
               <>
                 <div className="sale-detail-summary">
                   <article>
-                    <CalendarDays size={19} />
+                    <CalendarDays
+                      size={19}
+                    />
 
                     <div>
                       <span>Fecha</span>
@@ -262,7 +292,9 @@ function SaleDetailModal({
                   </article>
 
                   <article>
-                    <CreditCard size={19} />
+                    <CreditCard
+                      size={19}
+                    />
 
                     <div>
                       <span>
@@ -284,20 +316,25 @@ function SaleDetailModal({
                     <FileText size={19} />
 
                     <div>
-                      <span>Documento</span>
+                      <span>
+                        Documento
+                      </span>
 
                       <strong>
                         {saleDetail.sale
                           .document_type
                           ? `${
                               documentTypeLabels[
-                                saleDetail.sale
+                                saleDetail
+                                  .sale
                                   .document_type
                               ] ??
-                              saleDetail.sale
+                              saleDetail
+                                .sale
                                 .document_type
                             } ${
-                              saleDetail.sale
+                              saleDetail
+                                .sale
                                 .document_number ??
                               ""
                             }`
@@ -307,7 +344,9 @@ function SaleDetailModal({
                   </article>
 
                   <article>
-                    <UserRound size={19} />
+                    <UserRound
+                      size={19}
+                    />
 
                     <div>
                       <span>
@@ -325,9 +364,12 @@ function SaleDetailModal({
                   </article>
                 </div>
 
-                {saleDetail.sale.observation && (
+                {saleDetail.sale
+                  .observation && (
                   <div className="sale-detail-observation">
-                    <span>Observación</span>
+                    <span>
+                      Observación
+                    </span>
 
                     <p>
                       {
@@ -344,7 +386,9 @@ function SaleDetailModal({
                       <tr>
                         <th>Producto</th>
                         <th>Cantidad</th>
-                        <th>Precio unitario</th>
+                        <th>
+                          Precio unitario
+                        </th>
                         <th>Subtotal</th>
                       </tr>
                     </thead>
@@ -352,7 +396,11 @@ function SaleDetailModal({
                     <tbody>
                       {saleDetail.details.map(
                         (detail) => (
-                          <tr key={detail.id}>
+                          <tr
+                            key={
+                              detail.id
+                            }
+                          >
                             <td>
                               <div className="sale-detail-product">
                                 <PackageCheck
@@ -377,7 +425,9 @@ function SaleDetailModal({
                             </td>
 
                             <td>
-                              {detail.quantity}
+                              {
+                                detail.quantity
+                              }
                             </td>
 
                             <td>
@@ -400,11 +450,14 @@ function SaleDetailModal({
 
                 <footer className="sale-detail-total">
                   <div>
-                    <span>Total de la venta</span>
+                    <span>
+                      Total de la venta
+                    </span>
 
                     <strong>
                       {formatCurrency(
-                        saleDetail.sale.total,
+                        saleDetail.sale
+                          .total,
                       )}
                     </strong>
                   </div>
