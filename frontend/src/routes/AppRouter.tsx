@@ -9,6 +9,8 @@ import ChangePasswordPage from "../pages/ChangePasswordPage";
 import ConnectionTestPage from "../pages/ConnectionTestPage";
 import DashboardPage from "../pages/DashboardPage";
 import LoginPage from "../pages/LoginPage";
+
+import PasswordChangedRoute from "./PasswordChangedRoute";
 import ProtectedRoute from "./ProtectedRoute";
 
 function AppRouter() {
@@ -24,14 +26,16 @@ function AppRouter() {
 
         <Route element={<ProtectedRoute />}>
           <Route
-            path="/dashboard"
-            element={<DashboardPage />}
-          />
-
-          <Route
             path="/cambiar-contrasena"
             element={<ChangePasswordPage />}
           />
+
+          <Route element={<PasswordChangedRoute />}>
+            <Route
+              path="/dashboard"
+              element={<DashboardPage />}
+            />
+          </Route>
         </Route>
 
         <Route

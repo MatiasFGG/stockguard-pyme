@@ -7,12 +7,14 @@ import {
 } from "react";
 import { useNavigate } from "react-router";
 
-import { login } from "../api/authApi";
+import { useAuth } from "../contexts/AuthContext";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
-import { setAccessToken } from "../utils/tokenStorage";
+
 
 function LoginPage() {
   const navigate = useNavigate();
+
+  const { signIn } = useAuth();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -38,14 +40,12 @@ function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const loginData = await login({
-        username: normalizedUsername,
-        password,
-      });
+        const authenticatedUser = await signIn({
+          username: normalizedUsername,
+          password,
+    });
 
-      setAccessToken(loginData.access_token);
-
-      if (loginData.user.must_change_password) {
+    if (authenticatedUser.must_change_password) {
         navigate("/cambiar-contrasena", {
           replace: true,
         });

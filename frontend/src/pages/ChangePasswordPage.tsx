@@ -5,10 +5,12 @@ import {
 import { useNavigate } from "react-router";
 
 import { changePassword } from "../api/authApi";
+import { useAuth } from "../contexts/AuthContext";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
 
 function ChangePasswordPage() {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
 
   const [currentPassword, setCurrentPassword] =
     useState("");
@@ -78,9 +80,10 @@ function ChangePasswordPage() {
       await changePassword({
         current_password: currentPassword,
         new_password: newPassword,
-        confirm_new_password:
-          confirmNewPassword,
+        confirm_new_password: confirmNewPassword,
       });
+
+      await refreshUser();
 
       navigate("/dashboard", {
         replace: true,
@@ -101,7 +104,9 @@ function ChangePasswordPage() {
     <main>
       <section>
         <header>
-          <h1>Cambio obligatorio de contraseña</h1>
+          <h1>
+            Cambio obligatorio de contraseña
+          </h1>
 
           <p>
             Tu cuenta utiliza una contraseña
@@ -144,7 +149,9 @@ function ChangePasswordPage() {
               type="password"
               value={newPassword}
               onChange={(event) =>
-                setNewPassword(event.target.value)
+                setNewPassword(
+                  event.target.value,
+                )
               }
               autoComplete="new-password"
               disabled={isSubmitting}

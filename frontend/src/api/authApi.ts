@@ -1,6 +1,9 @@
 import httpClient from "./httpClient";
 
+
+
 import type {
+  AuthUser,
   ChangePasswordRequest,
   LoginCredentials,
   LoginResponse,
@@ -37,4 +40,10 @@ export async function changePassword(
     "/auth/change-password",
     passwordData,
   );
+}
+
+export async function getCurrentUser(): Promise<AuthUser> {
+  const response = await httpClient.get<AuthUser>("/auth/me");
+
+  return response.data;
 }

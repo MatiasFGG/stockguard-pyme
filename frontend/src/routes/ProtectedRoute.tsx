@@ -3,10 +3,23 @@ import {
   Outlet,
 } from "react-router";
 
-import { hasAccessToken } from "../utils/tokenStorage";
+import { useAuth } from "../contexts/AuthContext";
 
 function ProtectedRoute() {
-  if (!hasAccessToken()) {
+  const {
+    isAuthenticated,
+    isLoading,
+  } = useAuth();
+
+  if (isLoading) {
+    return (
+      <main>
+        <p>Verificando sesión...</p>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
